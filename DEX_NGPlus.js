@@ -1,5 +1,5 @@
 /*:
- * @plugindesc A new game plus (NG Plus) script that reads a switch inside saved files.
+ * @plugindesc v1.0 A new game plus (NG Plus) script that reads a switch inside saved files.
  * A new game plus mode switch is enabled when a new game plus save file is loaded
  *
  * @author Procraftynation - procrastination done right!
