@@ -1,5 +1,5 @@
 /*:
- * @plugindesc v1.0 A plugin that adds a little spice in your game's gameplay.
+ * @plugindesc v1.01 A gauge plugin that is useful in many ways. See help for details.
  * @author Procraftynation - procrastination done right!
  
  * @help
@@ -105,7 +105,11 @@
          .centerCenter()
          .start();
  * NOTE: always call the start() at the end!
- *
+ * ============================================================================
+ * Change Log
+ * ============================================================================
+ * v1.01 - Fixed cursor positioning.
+ * v1.00 - Initial release!
  *=============================================================================*/
  (function() {
    var Imported = Imported || {};
@@ -172,7 +176,7 @@
       this.__fillOffsetY = 0;
       this.__lifetimeOffsetX = 0;
       this.__lifetimeOffsetY = 0;
-      this.__cursorPoint = 80;//percentage center position based on fill width. 1-100
+      this.__cursorPoint = 0;//percentage center position based on fill width. 1-100
       
       //FILL OPTIONS
       this.__fillSpeed = 1;//1px per frame! very slow!
@@ -451,8 +455,8 @@
       this._gaugeCursor.y += (this._gaugeFill.bitmap.height - this._gaugeCursor.bitmap.height)/2;
       
       //move cursor to correct position in percentage based on _gaugeFill width/height
-      //move within x axis
-      this._gaugeCursor.x = this._gaugeFill.bitmap.width * this.__cursorPoint - this._gaugeCursor.bitmap.width / 2;
+      //move within x axis this._gaugeFill.x +
+      this._gaugeCursor.x = this._gaugeFill.x + this._gaugeFill.bitmap.width * this.__cursorPoint/100 - this._gaugeCursor.bitmap.width / 2;
       //check if out of border, should be within gaugeFill's width only
       if(this._gaugeCursor.x + this._gaugeCursor.bitmap.width > this._gaugeFill.bitmap.width) {
          this._gaugeCursor.x = this._gaugeFill.bitmap.width - this._gaugeCursor.bitmap.width;
