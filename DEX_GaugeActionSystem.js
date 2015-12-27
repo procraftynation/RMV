@@ -1,5 +1,5 @@
 /*:
- * @plugindesc v1.01 A gauge plugin that is useful in many ways. See help for details.
+ * @plugindesc v1.08 A gauge plugin that is useful in many ways. See help for details.
  * @author Procraftynation - procrastination done right!
  
  * @help
@@ -108,6 +108,14 @@
  * ============================================================================
  * Change Log
  * ============================================================================
+ * v1.08 - Moved call to __finish. Called only when gauge fades out completly.
+ *       - Added option to position gauge above or below player character.
+ *       - Added option to make lifetime image decrease instead of increasing.
+ *       - Added $gameSystem function $gameSystem.gauge() for easier access of gauge.
+ *       - New gauge functions: isMoving(), isDead(), isSuccess(), isFailed() and isCancelled().
+ *           Ex: $gameSystem.isMoving()
+ *       - Added new option for success point to be above or below cursor point.
+ *       - Changed orientation to rotation for future display options.
  * v1.01 - Fixed cursor positioning.
  * v1.00 - Initial release!
  *=============================================================================*/
@@ -117,8 +125,7 @@
    var DEX = DEX || {};
    DEX.GAS = DEX.GAS || {};
    DEX.GAS.CONS = {
-      HORIZONTAL:0,
-      VERTICAL: 1,
+      ROTATE00: 0,
       EMPTY_POSITION_START: 0,
       EMPTY_POSITION_END: 1,
       POS_LOWER_LEFT: 1,
@@ -130,6 +137,8 @@
       POS_UPPER_LEFT: 7,
       POS_UPPER_CENTER: 8,
       POS_UPPER_RIGHT: 9,
+      POS_ABOVE_PLAYER: 10,
+      POS_BELOW_PLAYER: 11,
       RESULT_SUCCESS: 1,
       RESULT_FAILURE: 2,
       RESULT_CANCEL: 3
@@ -150,7 +159,6 @@
    };
    /*
     * GaugeAction Class
-    * 
     */
    function GaugeAction() { this.initialize.apply(this, arguments); };
    GaugeAction.prototype = Object.create(Sprite.prototype);
@@ -160,7 +168,6 @@
       this.width = 0; // auto computed based on child images
       this.height = 0; // auto computed based on child images
       //To avoid collision with Sprite variables we use double underscores (__) as variable prefixes
-      
       //IMAGES
       this.__fillImage = null;
       this.__cursorImage = null;
@@ -169,7 +176,7 @@
       this.__lifetimeImage = null;
       //POSITIONING
       this.__gaugePosition = DEX.GAS.CONS.POS_UPPER_CENTER;
-      this.__gaugeOrientation = DEX.GAS.CONS.HORIZONTAL;
+      this.__gaugeRotation = DEX.GAS.CONS.ROTATE00;
       this.__xOffset = 0;
       this.__yOffset = 0;
       this.__fillOffsetX = 0;
@@ -195,24 +202,32 @@
       
       this.__lifetime = 300;//5 seconds, 60=1s
       this.__lifeConsumed = 0;
+      this.__lifeDescreasing = false;
       
       //flags used inside plugin only
       this.__componentsDisplayed = false;
-      this.__isCancelled = false;
-      this.__isDead = false;
       this.__isFinished = false;
+      //result flags
+      this.__isCancelled = false;
+      this.__isSuccess = false;
+      this.__isFailed = false;
+      this.__isDead = false;
+      
+      //Additional cursor success options
+      this.__successAboveCursor = false;
+      this.__successBelowCursor = false;
       
    };
    GaugeAction.prototype.update = function(){
       Sprite.prototype.update.call(this);
+      
       //setup
       if(!this.__componentsDisplayed) {
          this.__setUpComponents();
          this.__start();
       }
       this.__handleCancel();//iscanceled
-      if(this.__isDead || this.__isCancelled) {
-         this.__finish();
+      if(this.__isDead) {
          this.__updateFadeOut();
          return;//stop code to reach handleFilling
       }
@@ -243,6 +258,8 @@
          this.addChild(this._gaugeForeground);//rendered last if present
       }
       SceneManager._scene.addChild(this);
+      //add to $gameSystem
+      $gameSystem._gaugeActionSystem = this;
    };
    //=====================================
    // CHAINED PUBLIC METHODS for setting up gauge
@@ -282,9 +299,6 @@
       this.__foregroundImage = imageName;
       return this;
    };
-   //ORIENTATION
-   GaugeAction.prototype.horizontal = function() {this.__gaugeOrientation = DEX.GAS.HORIZONTAL; return this;};
-   GaugeAction.prototype.vertical = function() {this.__gaugeOrientation = DEX.GAS.VERTICAL; return this;};
    //POSITIONING
    GaugeAction.prototype.gaugePosition = function(position) {this.__gaugePosition = position;return this;};
    GaugeAction.prototype.upperLeft = function() {this.__gaugePosition = DEX.GAS.CONS.POS_UPPER_LEFT;return this;};
@@ -296,6 +310,8 @@
    GaugeAction.prototype.lowerLeft = function() {this.__gaugePosition = DEX.GAS.CONS.POS_LOWER_LEFT;return this;};
    GaugeAction.prototype.lowerCenter = function() {this.__gaugePosition = DEX.GAS.CONS.POS_LOWER_CENTER;return this;};
    GaugeAction.prototype.lowerRight = function() {this.__gaugePosition = DEX.GAS.CONS.POS_LOWER_RIGHT;return this;};
+   GaugeAction.prototype.abovePlayer = function() {this.__gaugePosition = DEX.GAS.CONS.POS_ABOVE_PLAYER;return this;};
+   GaugeAction.prototype.belowPlayer = function() {this.__gaugePosition = DEX.GAS.CONS.POS_BELOW_PLAYER;return this;};
    GaugeAction.prototype.offset = function(x,y) {
       this._xOffset = x;
       this._yOffset = y;
@@ -328,6 +344,16 @@
       this.__cursorPoint = cursorPoint;
       return this;
    };
+   GaugeAction.prototype.successAboveCursorPoint = function() {
+      this.__successAboveCursor = true;
+      this.__successBelowCursor = false;
+      return this;
+   };
+   GaugeAction.prototype.successBelowCursorPoint = function() {
+      this.__successAboveCursor = false;
+      this.__successBelowCursor = true;
+      return this;
+   };
    GaugeAction.prototype.fadeOutSpeed = function(fadeOutSpeed) {
       this.__fadeOutSpeed = fadeOutSpeed;
       return this;
@@ -352,6 +378,30 @@
       this.__lifetime = lifetime;
       return this;
    };
+   GaugeAction.prototype.lifetimeDecreasing = function() {
+      this.__lifeDescreasing = true;
+      return this;
+   };
+   GaugeAction.prototype.lifetimeIncreasing = function() {
+      this.__lifeDescreasing = false;
+      return this;
+   };
+   GaugeAction.prototype.isMoving = function() {
+      return this.__fillValue > 0;
+   };
+   GaugeAction.prototype.isDead = function() {
+      return this.__isDead;
+   };
+   GaugeAction.prototype.isSuccess = function() {
+      return this.__isSuccess;
+   };
+   GaugeAction.prototype.isFailed = function() {
+      return this.__isFailed;
+   };
+   GaugeAction.prototype.isCancelled = function() {
+      return this.__isCancelled;
+   };
+   
    //==================
    // Private methods
    //==================
@@ -362,31 +412,35 @@
       $gameSystem.disableMenu();
    };
    GaugeAction.prototype.__finish = function() {
-      if(this.__isFinished) return;
-      //call only once common event or map event
+      if(this.__isFinished)return;
       if(this.__commonEventId !== 0) {
          $gameTemp.reserveCommonEvent(this.__commonEventId);
       } else if(this.__mapEventId !== 0) {
          $gameMap.event(this.__mapEventId).start();
       }
+      //enable character movement
       $gameTemp._gaugeActionStop();
-      $gameSystem.enableMenu();      
+      $gameSystem.enableMenu();
+      SceneManager._scene.removeChild(this);
+      delete $gameSystem._gaugeActionSystem;
       this.__isFinished = true;
    }
+  
+   
    GaugeAction.prototype.__updateFadeOut = function() {
       this.__pauseBeforeFadeOut--;
       if(this.__pauseBeforeFadeOut <=0) {
          this.opacity -= this.__fadeOutSpeed;
          if(this.opacity <= 0) {
             //only remove from scene if not visible anymore
-            SceneManager._scene.removeChild(this);
+            this.__finish();
          }
       }
    };
    GaugeAction.prototype.__handleFilling = function() {
+      
       if((Input.isPressed("ok") || TouchInput.isPressed())) {
          //increment
-         //fill horizontal, TODO: vertical
          this.__fillValue += this.__fillSpeed;
          this._gaugeFill.setFrame(0, 0, this.__fillValue, this._gaugeFill.bitmap.height);
          if(this.__fillValue > this._gaugeFill.bitmap.width && !this.__resetFill)  
@@ -394,6 +448,7 @@
          else if(this.__fillValue > this._gaugeFill.bitmap.width && this.__resetFill)  
             this.__fillValue = 0;
       } else {
+         
          //decrement
          if(this.__emptySpeed == 0) this.__fillValue -= this.__fillSpeed;
          else  this.__fillValue -= this.__emptySpeed;
@@ -403,21 +458,34 @@
       }
    };
    GaugeAction.prototype.__handleLifetime = function() {
+      
       this.__lifeConsumed ++;
       if(this.__lifetimeImage !== null) {
          var lifeTimeFillValue = this.__lifeConsumed*(this._lifetimeFill.bitmap.width/this.__lifetime);
+         if(this.__lifeDescreasing) {
+            lifeTimeFillValue = this._lifetimeFill.bitmap.width - lifeTimeFillValue;
+         }
          this._lifetimeFill.setFrame(0, 0, lifeTimeFillValue, this._lifetimeFill.bitmap.height);
       }
       if(this.__lifeConsumed == this.__lifetime) {
          //check if success or failure
          var minSuccessPoint = this._gaugeCursor.x;
          var maxSuccessPoint = this._gaugeCursor.x + this._gaugeCursor.bitmap.width;
+         if(this.__successAboveCursor) {
+            minSuccessPoint = this._gaugeCursor.x + this._gaugeCursor.bitmap.width/2;//mid of cursor
+            maxSuccessPoint = this._gaugeCursor.x + this._gaugeFill.bitmap.width;
+         } else if(this.__successBelowCursor) {
+            minSuccessPoint = 0;
+            maxSuccessPoint = this._gaugeCursor.x + this._gaugeCursor.bitmap.width/2;//mid of cursor
+         }
          var resultPoint = this._gaugeFill.width + this.__fillOffsetX;
          //check if between range points
          if(resultPoint >= minSuccessPoint && resultPoint <= maxSuccessPoint) {
+            this.__isSuccess = true;
             if(this.__resultVariableId !== 0)
                $gameVariables.setValue(this.__resultVariableId, DEX.GAS.CONS.RESULT_SUCCESS);
          } else {
+            this.__isFailed = true;
             if(this.__resultVariableId !== 0)
                $gameVariables.setValue(this.__resultVariableId, DEX.GAS.CONS.RESULT_FAILURE);
          }
@@ -431,6 +499,7 @@
          if(this.__resultVariableId !== 0)
             $gameVariables.setValue(this.__resultVariableId, DEX.GAS.CONS.RESULT_CANCEL);
          this.__isCancelled = true;
+         this.__isDead = true;
       }
    };
    
@@ -446,14 +515,13 @@
       }
    };
    GaugeAction.prototype.__positionComponents = function() {
-      //TODO: function for this
+      
       this._gaugeFill.x += this.__fillOffsetX;
       this._gaugeFill.y += this.__fillOffsetY;
       
       //center cursor to fill component
       this._gaugeCursor.y += this.__fillOffsetY;
       this._gaugeCursor.y += (this._gaugeFill.bitmap.height - this._gaugeCursor.bitmap.height)/2;
-      
       //move cursor to correct position in percentage based on _gaugeFill width/height
       //move within x axis this._gaugeFill.x +
       this._gaugeCursor.x = this._gaugeFill.x + this._gaugeFill.bitmap.width * this.__cursorPoint/100 - this._gaugeCursor.bitmap.width / 2;
@@ -463,7 +531,6 @@
       } else if(this._gaugeCursor.x - this._gaugeCursor.bitmap.width < 0) {
          this._gaugeCursor.x = 0;//this is relative to parent
       }
-      
       //move lifetime fill
       if(this.__lifetimeImage !== null) {
          this._lifetimeFill.x += this.__lifetimeOffsetX;
@@ -475,50 +542,58 @@
       var y;
       var baseWidth = Graphics.width;
       var baseHeight = Graphics.height;
-         
       switch(this.__gaugePosition) {
+         case DEX.GAS.CONS.POS_ABOVE_PLAYER:
+            x = $gamePlayer.screenX() - this.width/2;
+            y = $gamePlayer.screenY() - this.height - $gameMap.tileHeight();
+            break;
+         case DEX.GAS.CONS.POS_BELOW_PLAYER:
+            x = $gamePlayer.screenX() - this.width/2;
+            y = $gamePlayer.screenY();
+            break;
          case DEX.GAS.CONS.POS_LOWER_LEFT:
-               x = this.__xOffset; 
-               y = this.__yOffset + baseHeight - this.height; 
-               break;
+            x = this.__xOffset;
+            y = this.__yOffset + baseHeight - this.height; 
+            break;
          case DEX.GAS.CONS.POS_LOWER_CENTER:
-               x = this.__xOffset + baseWidth/2 - this.width/2; 
-               y = this.__yOffset + baseHeight - this.height; 
-               break; 
+            x = this.__xOffset + baseWidth/2 - this.width/2; 
+            y = this.__yOffset + baseHeight - this.height; 
+            break; 
          case DEX.GAS.CONS.POS_LOWER_RIGHT:
-               x = this.__xOffset + baseWidth - this.width;
-               y = this.__yOffset + baseHeight - this.height;
-               break;
+            x = this.__xOffset + baseWidth - this.width;
+            y = this.__yOffset + baseHeight - this.height;
+            break;
          case DEX.GAS.CONS.POS_CENTER_LEFT:
-               x = this.__xOffset; 
-               y = this.__yOffset + baseHeight/2 - this.height/2; 
-               break;
+            x = this.__xOffset; 
+            y = this.__yOffset + baseHeight/2 - this.height/2; 
+            break;
          case DEX.GAS.CONS.POS_CENTER_CENTER:
-               x = this.__xOffset + baseWidth/2 - this.width/2; 
-               y = this.__yOffset + baseHeight/2 - this.height/2;
-               break;
+            x = this.__xOffset + baseWidth/2 - this.width/2; 
+            y = this.__yOffset + baseHeight/2 - this.height/2;
+            break;
          case DEX.GAS.CONS.POS_CENTER_RIGHT:
-               x = this.__xOffset + baseWidth - this.width;
-               y = this.__yOffset + baseHeight/2 - this.height/2; 
-               break;
+            x = this.__xOffset + baseWidth - this.width;
+            y = this.__yOffset + baseHeight/2 - this.height/2; 
+            break;
          case DEX.GAS.CONS.POS_UPPER_LEFT:
-               x = this.__xOffset; 
-               y = this.__yOffset;
-               break;
+            x = this.__xOffset; 
+            y = this.__yOffset;
+            break;
          case DEX.GAS.CONS.POS_UPPER_CENTER:
-               x = this.__xOffset + baseWidth/2 - this.width/2;
-               y = this.__yOffset;
-               break;
+            x = this.__xOffset + baseWidth/2 - this.width/2;
+            y = this.__yOffset;
+            break;
          case DEX.GAS.CONS.POS_UPPER_RIGHT:
-               x = this.__xOffset + baseWidth - this.width;
-               y = this.__yOffset;
-               break;
+            x = this.__xOffset + baseWidth - this.width;
+            y = this.__yOffset;
+            break;
       }
       this.x = x;
       this.y = y;
+      
    };
    GaugeAction.prototype.__computeDimensions = function(){
-      //dimension are based on the highest of fill, cursor or background
+      //dimensions are based on the highest of fill, cursor or background
       if(this.__backgroundImage !== null) {
          this.height = this._gaugeBackground.bitmap.height;
          this.width = this._gaugeBackground.bitmap.width;
@@ -526,7 +601,6 @@
          this.height = Math.max(this._gaugeFill.bitmap.height,this._gaugeCursor.bitmap.height);
          this.width = Math.max(this._gaugeFill.bitmap.width,this._gaugeCursor.bitmap.width);
       }
-      
    };
    
    //=============================
@@ -550,11 +624,14 @@
       //positioning
       position,cursorPoint,fillOffsetX,fillOffsetY,lifetimeOffsetX,lifetimeOffsetY,
       //speed 
-      fillSpeed, lifetime, resetFill
+      fillSpeed, lifetime, resetFill, lifeDecreasing
       ) {
       var gauge = new GaugeAction();
       if(resetFill == true) {
          gauge.resetFill();
+      }
+      if(lifeDecreasing == true) {
+         gauge.lifetimeDecreasing();
       }
       gauge.resultVariableId(variableId)
          .mapEventId(mapEventId)
@@ -579,11 +656,14 @@
       //positioning
       position,cursorPoint,fillOffsetX,fillOffsetY,lifetimeOffsetX,lifetimeOffsetY,
       //speed 
-      fillSpeed, lifetime, resetFill
+      fillSpeed, lifetime, resetFill, lifeDecreasing
       ) {
       var gauge = new GaugeAction();
       if(resetFill == true) {
          gauge.resetFill();
+      }
+      if(lifeDecreasing == true) {
+         gauge.lifetimeDecreasing();
       }
       gauge.resultVariableId(variableId)
          .commonEventId(commonEventId)
@@ -608,12 +688,18 @@
    Game_System.prototype.newGaugeMapEvent = DEX_GAS_newNormalGaugeMapEvent;
    Game_System.prototype.newBlankGaugeCommonEvent = DEX_GAS_newBlankGaugeCommonEvent;
    Game_System.prototype.newGaugeCommonEvent = DEX_GAS_newNormalGaugeCommonEvent;
+   //Returns the current gauge where you can call chained methods to update options.
+   Game_System.prototype.gauge = function() {
+      if(!$gameSystem._gaugeActionSystem) {
+         $gameSystem._gaugeActionSystem = new GaugeAction();
+      }
+      return $gameSystem._gaugeActionSystem;
+   }
    //============================================================
    // Game_Temp:
    //============================================================
    Game_Temp.prototype._gaugeActionStart  = function() {
       this._gaugeActionRunning = true;
-      
    };
    Game_Temp.prototype._gaugeActionStop = function() {
       this._gaugeActionRunning = false;
