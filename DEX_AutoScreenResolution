@@ -1,0 +1,18 @@
+/*:
+ * @plugindesc v1.0 automatically set the resolution of your game to the player's resolution
+ * @author Procraftynation - procrastination done right!
+ */
+
+if (StorageManager.isLocalMode()) {
+    SceneManager._screenWidth = window.screen.width;
+    SceneManager._screenHeight = window.screen.height;
+    SceneManager._boxWidth = window.screen.width;
+    SceneManager._boxHeight = window.screen.height;
+} else {
+    var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    SceneManager._screenWidth = w;
+    SceneManager._screenHeight = h;
+    SceneManager._boxWidth = w;
+    SceneManager._boxHeight = h;
+}
