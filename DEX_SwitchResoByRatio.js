@@ -7,7 +7,7 @@
  *
  * @param 4:3 Height
  * @desc The replacement height when user's aspect ratio is 4:3
- *
+ * 
  * @param 16:9 Width
  * @desc The replacement width when user's aspect ratio is 16:9
  *
@@ -19,6 +19,12 @@
  *
  * @param 21:9 Height
  * @desc The replacement height when user's aspect ratio is 21:9
+ * 
+ * @param 8:5 Width
+ * @desc The replacement width when user's aspect ratio is 8:5
+ *
+ * @param 8:5 Height
+ * @desc The replacement height when user's aspect ratio is 8:5
  *
  * =====================================================================
  * Terms of Use
@@ -40,6 +46,7 @@ DEX.SRBR.CONS = {
     RATIO_4_3: "4:3",
     RATIO_16_9: "16:9",
     RATIO_21_9: "21:9",
+    RATIO_8_5: "8:5",
 };
 //=====================================
 // Plugin parameters
@@ -51,6 +58,9 @@ DEX.SRBR.Param.width_16_9 = Number(PluginManager.parameters('DEX_SwitchResoByRat
 DEX.SRBR.Param.height_16_9 = Number(PluginManager.parameters('DEX_SwitchResoByRatio')["16:9 Height"]);
 DEX.SRBR.Param.width_21_9 = Number(PluginManager.parameters('DEX_SwitchResoByRatio')["21:9 Width"]);
 DEX.SRBR.Param.height_21_9 = Number(PluginManager.parameters('DEX_SwitchResoByRatio')["21:9 Height"]);
+DEX.SRBR.Param.width_8_5 = Number(PluginManager.parameters('DEX_SwitchResoByRatio')["8:5 Width"]);
+DEX.SRBR.Param.height_8_5 = Number(PluginManager.parameters('DEX_SwitchResoByRatio')["8:5 Height"]);
+
 //=====================================
 // Plugin methods
 //=====================================
@@ -70,6 +80,9 @@ DEX.SRBR.calculateAspectRatio = function () {
     } else if (this.aspectRatio === DEX.SRBR.CONS.RATIO_21_9) {
         this.newWidth = DEX.SRBR.Param.width_21_9 || -1;
         this.newHeight = DEX.SRBR.Param.height_21_9 || -1;
+    } else if (this.aspectRatio === DEX.SRBR.CONS.RATIO_8_5) {
+        this.newWidth = DEX.SRBR.Param.width_8_5 || -1;
+        this.newHeight = DEX.SRBR.Param.height_8_5 || -1;
     } else {
         this.newWidth = -1;
         this.newHeight = -1;
