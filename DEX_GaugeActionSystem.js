@@ -1,5 +1,5 @@
 /*:
- * @plugindesc v2.01 A gauge plugin that is useful in many ways. See help for details.
+ * @plugindesc v2.02 A gauge plugin that is useful in many ways. See help for details.
  * @author Procraftynation - https://github.com/procraftynation
  *
  * @help
@@ -234,6 +234,7 @@
  * ============================================================================
  * Change Log
  * ============================================================================
+ * v2.02 - Fixed Object too big when saving - moved gauge objects to $gameTemp instead of $gameSystem.
  * v2.01 - Rewrite plugin. NOT COMPATIBLE with older versions. Version based on number of changes detected by git.
  *       - Changed and removed a lot of functions. See documentation for available functions.
  *       - Added gaugeId for managing MULTIPLE gauges. Allows gauge setup on a different event.
@@ -1088,13 +1089,13 @@
     // Returns the current gauge where you can call chained methods to update options.
     //=====================================
     Game_System.prototype.gauge = function (gaugeId) {
-        this.__gauges = this.__gauges || {};
+        $gameTemp.__gauges = $gameTemp.__gauges || {};
         gaugeId = gaugeId || "default";
-        if (!(gaugeId in this.__gauges) && this.__gauges[gaugeId] === undefined) {
+        if (!(gaugeId in $gameTemp.__gauges) && $gameTemp.__gauges[gaugeId] === undefined) {
             //create new and add to gaugeactions
-            this.__gauges[gaugeId] = new GaugeContainer(gaugeId);
+            $gameTemp.__gauges[gaugeId] = new GaugeContainer(gaugeId);
         }
-        return this.__gauges[gaugeId];
+        return $gameTemp.__gauges[gaugeId];
     };
 
     //=====================================
