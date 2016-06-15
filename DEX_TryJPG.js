@@ -1,11 +1,18 @@
 /*:
  * @plugindesc v1.0 Tries to load jpg files if no png found
- * @author Procraftynation - procrastination done right!
+ * @author Procraftynation - https://www.youtube.com/c/procraftynation
  * 
  * @param Prioritize JPG
  * @desc Tries to load jpg files first before trying png
  * Values: true | false
  * @default false
+ * =====================================================================
+ * Terms of Use
+ * =====================================================================
+ * Free for use in non-commercial and commercial games just give credit
+ * and link back to https://www.youtube.com/c/procraftynation.
+ * If commercial, a free copy of the game is awesome but optional.
+ * =====================================================================*/
  */
 
 var Imported = Imported || {};
