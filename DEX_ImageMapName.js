@@ -1,6 +1,6 @@
 /*:
  * @plugindesc v1.00 Replace map name display with an image and animate it!
- * @author Procraftynation - procrastination done right!
+ * @author Procraftynation - https://www.youtube.com/c/procraftynation
  *  
  * @param Position
  * @desc Position based on the keyboard numpad positions
@@ -119,7 +119,13 @@
  * 4. <img:ForestMapName2,position:9,moveinfrom:top,moveoutto:right,fadeoutspeed:0,padTop:0>
  * 5. <img:ForestMapName3,position:9,moveinspeed:20,moveinfrom:right,moveoutto:bottom,fadeoutspeed:5,padtop:0,padright:0>
  *
- */
+ * =====================================================================
+ * Terms of Use
+ * =====================================================================
+ * Free for use in non-commercial and commercial games just give credit
+ * and link back to https://www.youtube.com/c/procraftynation.
+ * If commercial, a free copy of the game is awesome but optional.
+ * =====================================================================*/
 
 var Imported = Imported || {};
 Imported.DEX_IMN = true;
