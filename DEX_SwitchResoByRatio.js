@@ -1,6 +1,6 @@
 /*:
  * @plugindesc v1.0 Detect aspect ratio and change resolution based on options specified
- * @author Procraftynation - https://github.com/procraftynation/RMV
+ * @author Procraftynation - https://www.youtube.com/c/procraftynation
  *
  * @param 4:3 Width
  * @desc The replacement width when user's aspect ratio is 4:3
@@ -30,9 +30,9 @@
  * Terms of Use
  * =====================================================================
  * Free for use in non-commercial and commercial games just give credit
- * and link back to https://github.com/procraftynation/RMV.
+ * and link back to https://www.youtube.com/c/procraftynation.
  * If commercial, a free copy of the game is awesome but optional.
- */
+ * =====================================================================*/
 
 var Imported = Imported || {};
 Imported.DEX_SRBR = true;
