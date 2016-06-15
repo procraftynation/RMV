@@ -1,8 +1,7 @@
 /*:
  * @plugindesc v1.0 A new game plus (NG Plus) script that reads a switch inside saved files.
  * A new game plus mode switch is enabled when a new game plus save file is loaded
- *
- * @author Procraftynation - procrastination done right!
+ * @author Procraftynation - https://www.youtube.com/c/procraftynation
  *
  * @param Menu Text
  * @desc The text to be displayed for the New Game + Menu
@@ -24,8 +23,13 @@
  * @help
  * A new game plus (NG Plus) script that reads a switch (Game Complete Switch) inside saved files.
  * When a saved file is selected from New Game + menu, a switch (NG Plus Mode Switch) is enabled.
- *
- */
+ * =====================================================================
+ * Terms of Use
+ * =====================================================================
+ * Free for use in non-commercial and commercial games just give credit
+ * and link back to https://www.youtube.com/c/procraftynation.
+ * If commercial, a free copy of the game is awesome but optional.
+ * =====================================================================*/
  
 (function() {
 	var DEX = DEX || {}; // DEX's main object
